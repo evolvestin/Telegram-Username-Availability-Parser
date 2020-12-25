@@ -57,6 +57,7 @@ def variables_creation():
     return db, files, combs, file_name
 
 
+t_me = 'https://t.me/'
 min_length = os.environ.get('min_length')
 max_length = os.environ.get('min_length')
 Auth = objects.AuthCentre(os.environ['TOKEN'])
@@ -79,11 +80,11 @@ def checking():
                 for username in combinations:
                     if username not in array_db[main_file + '_used.txt']:
                         try:
-                            response = requests.get('https://t.me/' + username)
+                            response = requests.get(t_me + username)
                         except IndexError and Exception:
                             sleep(0.01)
                             try:
-                                response = requests.get('https://t.me/' + username)
+                                response = requests.get(t_me + username)
                             except IndexError and Exception:
                                 response = None
                         if response:
@@ -92,6 +93,7 @@ def checking():
                             if is_username_exist is None:
                                 array_db['clear'].append(username)
                             array_db['used'].append(username)
+                objects.printer('Цикл проверок доступности юзеров пройден (' + main_file + ')')
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
 
@@ -101,6 +103,7 @@ def files_upload():
     for file in file_names:
         if file_names[file] == '':
             drive_client.create_file(file, folder_id)
+            objects.printer(file + ' создан')
     while True:
         try:
             sleep(20)
@@ -117,8 +120,9 @@ def files_upload():
                     drive_client.update_file(file_names[file_name], file_name)
 
             if len(temp_db[main_file + '_used.txt']) == combinations:
+                objects.printer('Записываем список свободных username (' + main_file + ') в google')
                 title = main_file + '/' + str(objects.time_now())
-                file = open(main_file + '_used.txt', 'r')
+                file = open(main_file + '_clear.txt', 'r')
                 text = file.read()
                 file.close()
                 chunks = [text[offset: offset + 50000] for offset in range(0, len(text), 50000)]
@@ -142,6 +146,7 @@ def files_upload():
                         if request_counter == 50:
                             request_counter = 0
                             sleep(100)
+                objects.printer('Успешно записана информация в google')
         except IndexError and Exception:
             ErrorAuth.thread_exec()
 
