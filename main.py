@@ -91,8 +91,8 @@ def checking():
                             soup = BeautifulSoup(response.text, 'html.parser')
                             is_username_exist = soup.find('a', class_='tgme_action_button_new')
                             if is_username_exist is None:
-                                array_db['clear'].append(username)
-                            array_db['used'].append(username)
+                                array_db[main_file + '_clear.txt'].append(username)
+                            array_db[main_file + '_used.txt'].append(username)
                 objects.printer('Цикл проверок доступности юзеров пройден (' + main_file + ')')
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
