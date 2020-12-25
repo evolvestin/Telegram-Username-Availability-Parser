@@ -1,4 +1,5 @@
 import os
+import re
 import gspread
 import objects
 import _thread
@@ -43,12 +44,16 @@ def variables_creation():
     for file in files:
         if os.path.exists(file) is False:
             with open(file, 'w') as f:
-                f.write(' ')
+                f.write('CLEAR_FILE_FILLER')
                 f.close()
 
     for file in files:
         opened = open(file, 'r')
-        db[file] = opened.read().split(' ')
+        text = re.sub('CLEAR_FILE_FILLER', '', opened.read())
+        if text:
+            db[file] = text.split(' ')
+        else:
+            db[file] = []
         opened.close()
 
     for length in range(min_length, max_length + 1):
@@ -97,21 +102,29 @@ def checking():
                 ErrorAuth.thread_exec()
 
 
+def save_array_to_file(path, array):
+    file = open(path, 'w')
+    text = ' '.join(array)
+    if text == '':
+        text = 'CLEAR_FILE_FILLER'
+    file.write(text)
+    file.close()
+
+
 def files_upload():
+    global array_db, file_names
     drive_client = Drive('google.json')
     for file in file_names:
         if file_names[file] == '':
-            drive_client.create_file(file, folder_id)
+            response = drive_client.create_file(file, folder_id)
+            file_names[file] = response['id']
             objects.printer(file + ' создан')
     while True:
         try:
             sleep(20)
             temp_db = deepcopy(array_db)
             for file_name in file_names:
-                file = open(file_name, 'w')
-                file.write(' '.join(temp_db[file_name]))
-                file.close()
-
+                save_array_to_file(file_name, temp_db[file_name])
                 try:
                     drive_client.update_file(file_names[file_name], file_name)
                 except IndexError and Exception:
@@ -120,7 +133,7 @@ def files_upload():
 
             print('len(array_db[`' + str(main_file + '_used.txt') + '`]) =', len(temp_db[main_file + '_used.txt']))
             print('len(combinations) =', len(combinations))
-            if len(temp_db[main_file + '_used.txt']) == combinations:
+            if len(temp_db[main_file + '_used.txt']) == len(combinations):
                 log_text = 'Цикл проверок доступности юзеров пройден. Записываем список свободных username'
                 objects.printer(log_text + ' (' + main_file + ') в google')
                 title = main_file + '/' + str(objects.time_now())
@@ -149,6 +162,10 @@ def files_upload():
                             request_counter = 0
                             sleep(100)
                 objects.printer('Успешно записана информация в google')
+                for file_name in array_db:
+                    array_db[file_name] = []
+                    save_array_to_file(file_name, array_db[file_name])
+                objects.printer('Запущен новый цикл проверок, файлы очищены')
         except IndexError and Exception:
             ErrorAuth.thread_exec()
 
