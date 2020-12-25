@@ -64,7 +64,7 @@ def variables_creation():
 
 t_me = 'https://t.me/'
 min_length = os.environ.get('min_length')
-max_length = os.environ.get('min_length')
+max_length = os.environ.get('max_length')
 Auth = objects.AuthCentre(os.environ['TOKEN'])
 ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
 if min_length and max_length:
