@@ -131,8 +131,6 @@ def files_upload():
                     drive_client = Drive('google.json')
                     drive_client.update_file(file_names[file_name], file_name)
 
-            print('len(array_db[`' + str(main_file + '_used.txt') + '`]) =', len(temp_db[main_file + '_used.txt']))
-            print('len(combinations) =', len(combinations))
             if len(temp_db[main_file + '_used.txt']) == len(combinations):
                 log_text = 'Цикл проверок доступности юзеров пройден. Записываем список свободных username'
                 objects.printer(log_text + ' (' + main_file + ') в google')
