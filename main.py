@@ -59,7 +59,10 @@ def variables_creation():
     for length in range(min_length, max_length + 1):
         for value in product(ascii_lowercase, repeat=length):
             combs.append(''.join(value) + user_postfix)
-    return db, files, combs, file_name
+
+    max_len_combs = len(combs)
+    combs = list(set(combs).difference(array_db[main_file + '_used.txt']))[:500000]
+    return db, files, combs, file_name, max_len_combs
 
 
 t_me = 'https://t.me/'
@@ -69,11 +72,11 @@ Auth = objects.AuthCentre(os.environ['TOKEN'])
 ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
 if min_length and max_length:
     min_length, max_length = int(min_length), int(max_length)
-    array_db, file_names, combinations, main_file = variables_creation()
+    array_db, file_names, combinations, main_file, max_len_combinations = variables_creation()
     Auth.start_message(stamp1)
 else:
     Auth.start_message(stamp1, '\nОшибка с переменными окружения.\n' + objects.bold('Бот выключен'))
-    array_db, file_names, combinations, main_file = {}, {}, [], ''
+    array_db, file_names, combinations, main_file, max_len_combinations = {}, {}, [], '', 1
 # ========================================================================================================
 
 
@@ -131,7 +134,7 @@ def files_upload():
                     drive_client = Drive('google.json')
                     drive_client.update_file(file_names[file_name], file_name)
 
-            if len(temp_db[main_file + '_used.txt']) == len(combinations):
+            if len(temp_db[main_file + '_used.txt']) == max_len_combinations:
                 log_text = 'Цикл проверок доступности юзеров пройден. Записываем список свободных username'
                 objects.printer(log_text + ' (' + main_file + ') в google')
                 title = main_file + '/' + str(objects.time_now())
