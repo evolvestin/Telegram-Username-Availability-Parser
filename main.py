@@ -59,11 +59,15 @@ def variables_creation():
     for length in range(min_length, max_length + 1):
         for value in product(ascii_lowercase, repeat=length):
             combs.append(''.join(value) + user_postfix)
-    chunks = [combs[offset: offset + 50000] for offset in range(0, len(combs), 50000)]
+    chunks = []
+    for offset in range(0, len(combs), 50000):
+        chunks.append(combs[offset: offset + 50000])
+        sleep(5)
+        print('а поможет ли это 🤔')
     print('len(combs)', len(combs))
     print('len(chunks)', len(chunks))
     print(f'len(db[{file_name} + _used.txt])', len(db[file_name + '_used.txt']))
-    return db, files, combs, file_name, len(combs)
+    return db, files, chunks, file_name, len(combs)
 
 
 t_me = 'https://t.me/'
