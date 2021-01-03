@@ -56,14 +56,19 @@ def variables_creation():
             db[file] = []
         opened.close()
 
+    chunks = []
+    chunk = []
+    max_len_combs = 0
     for length in range(min_length, max_length + 1):
         for value in product(ascii_lowercase, repeat=length):
-            combs.append(''.join(value) + user_postfix)
-    chunks = []
-    for offset in range(0, len(combs), 50000):
-        chunks.append(combs[offset: offset + 50000])
-        sleep(5)
-        print('а поможет ли это 🤔')
+            max_len_combs += 1
+            chunk.append(''.join(value) + user_postfix)
+            if len(chunk) == 50000:
+                chunks.append(chunk)
+                chunk.clear()
+    if chunk:
+        chunks.append(chunk)
+
     print('len(combs)', len(combs))
     print('len(chunks)', len(chunks))
     print(f'len(db[{file_name} + _used.txt])', len(db[file_name + '_used.txt']))
