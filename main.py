@@ -60,6 +60,7 @@ def variables_creation():
         for value in product(ascii_lowercase, repeat=length):
             combs.append(''.join(value) + user_postfix)
 
+    print('test')
     max_len_combs = len(combs)
     combs = list(set(combs).difference(array_db[main_file + '_used.txt']))[:500000]
     return db, files, combs, file_name, max_len_combs
