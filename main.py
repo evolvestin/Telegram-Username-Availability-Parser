@@ -18,8 +18,10 @@ folder_id = ''
 def variables_creation():
     global folder_id
     db = {}
-    combs = []
+    chunk = []
+    chunks = []
     user_postfix = ''
+    max_len_combs = 0
     file_name = 'symbol'
     prefix = str(min_length)
     objects.environmental_files()
@@ -56,9 +58,6 @@ def variables_creation():
             db[file] = []
         opened.close()
 
-    chunks = []
-    chunk = []
-    max_len_combs = 0
     for length in range(min_length, max_length + 1):
         for value in product(ascii_lowercase, repeat=length):
             max_len_combs += 1
@@ -68,11 +67,7 @@ def variables_creation():
                 chunk.clear()
     if chunk:
         chunks.append(chunk)
-
-    print('len(combs)', len(combs))
-    print('len(chunks)', len(chunks))
-    print(f'len(db[{file_name} + _used.txt])', len(db[file_name + '_used.txt']))
-    return db, files, chunks, file_name, len(combs)
+    return db, files, chunks, file_name, max_len_combs
 
 
 t_me = 'https://t.me/'
@@ -83,7 +78,7 @@ ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
 if min_length and max_length:
     min_length, max_length = int(min_length), int(max_length)
     array_db, file_names, split_combinations, main_file, max_len_combinations = variables_creation()
-    #Auth.start_message(stamp1)
+    Auth.start_message(stamp1)
 else:
     Auth.start_message(stamp1, '\nОшибка с переменными окружения.\n' + objects.bold('Бот выключен'))
     array_db, file_names, split_combinations, main_file, max_len_combinations = {}, {}, [], '', 1
@@ -145,7 +140,7 @@ def files_upload():
                     drive_client = Drive('google.json')
                     drive_client.update_file(file_names[file_name], file_name)
 
-            if len(temp_db[main_file + '_used.txt']) == max_len_combinations:#
+            if len(temp_db[main_file + '_used.txt']) == max_len_combinations:
                 log_text = 'Цикл проверок доступности юзеров пройден. Записываем список свободных username'
                 objects.printer(log_text + ' (' + main_file + ') в google')
                 title = main_file + '/' + str(objects.time_now())
