@@ -62,11 +62,12 @@ def variables_creation():
         for value in product(ascii_lowercase + '_', repeat=length):
             username = ''.join(value) + user_postfix
             if username.startswith('_') is False and username.endswith('_') is False:
-                max_len_combs += 1
-                chunk.append(''.join(value) + user_postfix)
-                if len(chunk) == 50000:
-                    chunks.append(chunk)
-                    chunk.clear()
+                if re.search('__+', username) is None:
+                    max_len_combs += 1
+                    chunk.append(username)
+                    if len(chunk) == 50000:
+                        chunks.append(chunk)
+                        chunk.clear()
     if chunk:
         chunks.append(chunk)
     return db, files, chunks, file_name, max_len_combs
