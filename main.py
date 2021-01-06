@@ -66,10 +66,10 @@ def variables_creation():
                     max_len_combs += 1
                     chunk.append(username)
                     if len(chunk) == 50000:
-                        chunks.append(chunk)
+                        chunks.append(deepcopy(chunk))
                         chunk.clear()
     if chunk:
-        chunks.append(chunk)
+        chunks.append(deepcopy(chunk))
     return db, files, chunks, file_name, max_len_combs
 
 
@@ -96,6 +96,7 @@ def checking():
                 for split in split_combinations:
                     for username in split:
                         if username not in array_db[main_file + '_used.txt']:
+                            sleep(0.003)
                             try:
                                 response = requests.get(t_me + username)
                             except IndexError and Exception:
