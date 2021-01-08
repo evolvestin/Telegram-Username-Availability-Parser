@@ -64,9 +64,9 @@ def variables_creation():
                 if re.search('__+', username) is None:
                     max_len_combs += 1
                     if len(chunk) <= 500000:
-                        if username not in array_db[main_file + '_used.txt']:
+                        if username not in db[main_file + '_used.txt']:
                             chunk.append(username)
-    print('len(array_db[' + main_file + '_used.txt]) =', len(array_db[main_file + '_used.txt']))
+    print('len(array_db[' + main_file + '_used.txt]) =', len(db[main_file + '_used.txt']))
     print('len(chunk) =', len(chunk))
     return db, files, chunk, file_name, max_len_combs
 
