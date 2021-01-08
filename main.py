@@ -19,7 +19,6 @@ def variables_creation():
     global folder_id
     db = {}
     chunk = []
-    chunks = []
     user_postfix = ''
     max_len_combs = 0
     file_name = 'symbol'
@@ -64,13 +63,12 @@ def variables_creation():
             if username.startswith('_') is False and username.endswith('_') is False:
                 if re.search('__+', username) is None:
                     max_len_combs += 1
-                    chunk.append(username)
-                    if len(chunk) == 50000:
-                        chunks.append(deepcopy(chunk))
-                        chunk.clear()
-    if chunk:
-        chunks.append(deepcopy(chunk))
-    return db, files, chunks, file_name, max_len_combs
+                    if len(chunk) <= 500000:
+                        if username not in array_db[main_file + '_used.txt']:
+                            chunk.append(username)
+    print('len(array_db[' + main_file + '_used.txt]) =', len(array_db[main_file + '_used.txt']))
+    print('len(chunk) =', len(chunk))
+    return db, files, chunk, file_name, max_len_combs
 
 
 t_me = 'https://t.me/'
@@ -82,6 +80,8 @@ if min_length and max_length:
     min_length, max_length = int(min_length), int(max_length)
     array_db, file_names, split_combinations, main_file, max_len_combinations = variables_creation()
     Auth.start_message(stamp1)
+    sleep(150)
+    _thread.exit()
 else:
     Auth.start_message(stamp1, '\nОшибка с переменными окружения.\n' + objects.bold('Бот выключен'))
     array_db, file_names, split_combinations, main_file, max_len_combinations = {}, {}, [], '', 1
