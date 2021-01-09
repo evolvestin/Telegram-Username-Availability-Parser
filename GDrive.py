@@ -58,7 +58,10 @@ class Drive:
         file = io.FileIO(file_path, 'wb')
         downloader = MediaIoBaseDownload(file, self.client.files().get_media(fileId=file_id))
         while done is False:
-            status, done = downloader.next_chunk()
+            try:
+                status, done = downloader.next_chunk()
+            except IndexError and Exception:
+                done = False
 
     def delete_file(self, file_id):
         self.client.files().delete(fileId=file_id).execute()
