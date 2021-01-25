@@ -178,6 +178,7 @@ def variables_creation():
         for key in worker:
             if key.endswith('.txt'):
                 save_array_to_file(key, [])
+                drive_client.update_file(worker[key], key)
         account = heroku3.from_key(worker['api'])
         for app in account.apps():
             config = app.config()
