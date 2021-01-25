@@ -92,7 +92,9 @@ def checking():
                             array_db[f"{worker['prefix']}_used.txt"].append(username)
                             if counter == 300:
                                 counter_array.append(datetime.now().timestamp() - stamp)
-                                print(median(counter_array))
+                                print('min', min(counter_array))
+                                print('max', max(counter_array))
+                                print('median', median(counter_array))
                                 counter = 0
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
@@ -148,7 +150,7 @@ def variables_creation():
             step = worker['combinations_count'] // worker['workers_count']
             range_end = (worker['row'] - 1) * step
             if worker['row'] - 1 == worker['workers_count']:
-                range_end = worker['combinations_count']
+                range_end = worker['combinations_count'] + 1
             if len(row) >= 8:
                 worker['status'] = row[7]
             for postfix in ['used', 'clear']:
@@ -159,7 +161,7 @@ def variables_creation():
                 if file['name'] in worker:
                     worker[file['name']] = file['id']
                     drive_client.download_file(file['id'], file['name'])
-            worker['range'] = range((worker['row'] - 2) * step, range_end + 1)
+            worker['range'] = range((worker['row'] - 2) * step, range_end)
 
     for file in drive_client.files(only_folders=True):
         if file['name'] == 'temp':
