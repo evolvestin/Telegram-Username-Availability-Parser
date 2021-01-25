@@ -34,9 +34,16 @@ class Drive:
                 break
         return response
 
-    def files(self, fields=standard_file_fields):
+    def files(self, fields=standard_file_fields, only_folders=False, name_startswith=False):
+        query = ''
         response = []
-        result = self.client.files().list(pageSize=1000, fields=fields).execute()
+        if only_folders:
+            query = "mimeType='application/vnd.google-apps.folder'"
+        if name_startswith:
+            if query:
+                query += ' and '
+            query += f"name contains '{name_startswith}'"
+        result = self.client.files().list(q=query, pageSize=1000, fields=fields).execute()
         for file in result['files']:
             response.append(revoke_time(file))
         return response
