@@ -14,6 +14,11 @@ from statistics import median
 from string import ascii_lowercase, ascii_uppercase
 # ========================================================================================================
 stamp1 = objects.time_now()
+t_me = 'https://t.me/'
+objects.environmental_files()
+array_db, combinations = {}, []
+drive_client = Drive('google.json')
+ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
 
 worker = {
     'row': 0,
@@ -188,24 +193,19 @@ def variables_creation():
     return db, combs
 
 
-drop = True
-t_me = 'https://t.me/'
-objects.environmental_files()
-array_db, combinations = {}, []
-drive_client = Drive('google.json')
-ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
-if os.environ.get('api'):
-    array_db, combinations = variables_creation()
-    print('len(combs) =', len(combinations))
-    print(objects.time_now() - stamp1)
-    for m in worker:
-        print(m + ':', worker[m])
-    print('len(array_db[' + worker['prefix'] + '_used.txt]) =', len(array_db[worker['prefix'] + '_used.txt']))
-    if worker['prefix'] and worker['folder']:
-        print('Запуск скрипта за', objects.time_now() - stamp1, 'секунд')
-        _thread.start_new_thread(files_upload, ())
-        checking()
+def start():
+    global array_db, combinations
+    if os.environ.get('api'):
+        array_db, combinations = variables_creation()
+        print('len(combs) =', len(combinations))
+        print(objects.time_now() - stamp1)
+        for m in worker:
+            print(m + ':', worker[m])
+        print('len(array_db[' + worker['prefix'] + '_used.txt]) =', len(array_db[worker['prefix'] + '_used.txt']))
+        if worker['prefix'] and worker['folder']:
+            print('Запуск скрипта за', objects.time_now() - stamp1, 'секунд')
+            _thread.start_new_thread(files_upload, ())
+            checking()
 
-if drop:
     ErrorAuth.start_message(stamp1, f"\nОшибка с переменными окружения.\n{objects.bold('Бот выключен')}")
 # ========================================================================================================
