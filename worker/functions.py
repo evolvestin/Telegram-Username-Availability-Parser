@@ -74,11 +74,11 @@ def checking():
                     if counter == 0:
                         stamp = datetime.now().timestamp()
                     if username not in array_db[f"{worker['prefix']}_used.txt"] and worker['status'] != '✅':
-                        sleep(0.0001)
+                        sleep(0.000001)
                         try:
                             response = requests.get(t_me + username)
                         except IndexError and Exception:
-                            sleep(0.01)
+                            sleep(0.000001)
                             try:
                                 response = requests.get(t_me + username)
                             except IndexError and Exception:
@@ -179,8 +179,7 @@ def variables_creation():
             if key.endswith('.txt'):
                 save_array_to_file(key, [])
                 drive_client.update_file(worker[key], key)
-        account = heroku3.from_key(worker['api'])
-        for app in account.apps():
+        for app in heroku3.from_key(worker['api']).apps():
             config = app.config()
             config['workers_count'] = str(worker['workers_count'])
 
