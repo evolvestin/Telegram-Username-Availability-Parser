@@ -149,8 +149,8 @@ def variables_creation():
             range_end = (worker['row'] - 1) * step
             if worker['row'] - 1 == worker['workers_count']:
                 range_end = worker['combinations_count']
-            if len(row) >= 6:
-                worker['status'] = row[5]
+            if len(row) >= 8:
+                worker['status'] = row[7]
             for postfix in ['used', 'clear']:
                 file_name = f"{worker['prefix']}_{postfix}.txt"
                 worker[file_name] = ''
