@@ -8,6 +8,7 @@ import requests
 from time import sleep
 from GDrive import Drive
 from copy import deepcopy
+import concurrent.futures
 from bs4 import BeautifulSoup
 from itertools import product
 from statistics import median
@@ -65,37 +66,43 @@ def checking():
     global array_db
     from datetime import datetime
     if combinations:
-        counter = 0
         counter_array = []
-        stamp = datetime.now().timestamp()
         while True:
             try:
+                counter = 0
+                results = []
+                futures = []
                 for username in combinations:
-                    if counter == 0:
-                        stamp = datetime.now().timestamp()
                     if username not in array_db[f"{worker['prefix']}_used.txt"] and worker['status'] != '✅':
-                        sleep(0.000001)
-                        try:
-                            response = requests.get(t_me + username)
-                        except IndexError and Exception:
-                            sleep(0.000001)
-                            try:
-                                response = requests.get(t_me + username)
-                            except IndexError and Exception:
-                                response = None
-                        if response:
-                            counter += 1
-                            soup = BeautifulSoup(response.text, 'html.parser')
-                            is_username_exist = soup.find('a', class_='tgme_action_button_new')
+                        counter += 1
+                        if counter <= 300:
+                            futures.append(t_me + username)
+                        else:
+                            break
+
+                stamp = datetime.now().timestamp()
+                with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
+                    futures = [future_executor.submit(requests.get, future) for future in futures]
+                    for future in concurrent.futures.as_completed(futures):
+                        results.append(future.result())
+
+                for result in results:
+                    soup = BeautifulSoup(result.content, 'html.parser')
+                    url = soup.find('meta', {'name': 'twitter:app:url:googleplay'})
+                    is_username_exist = soup.find('a', class_='tgme_action_button_new')
+                    if url:
+                        username = re.sub(t_me, '', str(url.get('content')))
+                        if username not in ['None', '']:
                             if is_username_exist is None:
                                 array_db[f"{worker['prefix']}_clear.txt"].append(username)
                             array_db[f"{worker['prefix']}_used.txt"].append(username)
-                            if counter == 300:
-                                counter_array.append(datetime.now().timestamp() - stamp)
-                                print('min', min(counter_array))
-                                print('max', max(counter_array))
-                                print('median', median(counter_array))
-                                counter = 0
+
+                sleep_cheat = int(60 - datetime.now().timestamp() + stamp) + 1
+                sleep(sleep_cheat)
+                counter_array.append(sleep_cheat)
+                print('min', min(counter_array))
+                print('max', max(counter_array))
+                print('median', median(counter_array))
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
 
