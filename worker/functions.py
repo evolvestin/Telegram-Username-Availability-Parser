@@ -167,10 +167,10 @@ def variables_creation():
 
     for key in worker:
         if key.endswith('.txt') and worker[key] == '':
+            save_array_to_file(key, [])
             response = drive_client.create_file(key, worker['folder'])
             objects.printer(f'{key} создан')
             worker[key] = response['id']
-            save_array_to_file(key, [])
 
     if str(worker['workers_count']) != worker['saved_workers_count']:
         for key in worker:
