@@ -11,7 +11,6 @@ from copy import deepcopy
 import concurrent.futures
 from bs4 import BeautifulSoup
 from itertools import product
-from statistics import median
 from string import ascii_lowercase, ascii_uppercase
 # ========================================================================================================
 stamp1 = objects.time_now()
@@ -26,6 +25,7 @@ worker = {
     'prefix': '',
     'folder': '',
     'status': '✅',
+    'another_api': '',
     'workers_count': 0,
     'range': range(0, 0),
     'combinations_count': 0,
@@ -66,7 +66,6 @@ def checking():
     global array_db
     from datetime import datetime
     if combinations:
-        counter_array = []
         while True:
             try:
                 counter = 0
@@ -97,12 +96,10 @@ def checking():
                                 array_db[f"{worker['prefix']}_clear.txt"].append(username)
                             array_db[f"{worker['prefix']}_used.txt"].append(username)
 
-                sleep_cheat = int(60 - datetime.now().timestamp() + stamp) + 1
-                sleep(sleep_cheat)
-                counter_array.append(sleep_cheat)
-                print('min', min(counter_array))
-                print('max', max(counter_array))
-                print('median', median(counter_array))
+                delay = int(60 - datetime.now().timestamp() + stamp) + 1
+                if delay < 0:
+                    delay = 0
+                sleep(delay)
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
 
@@ -160,6 +157,10 @@ def variables_creation():
                 range_end = worker['combinations_count'] + 1
             if len(row) >= 8:
                 worker['status'] = row[7]
+                if worker['api'] == row[6]:
+                    worker['another_api'] = row[3]
+                if worker['api'] == row[3]:
+                    worker['another_api'] = row[6]
             for postfix in ['used', 'clear']:
                 file_name = f"{worker['prefix']}_{postfix}.txt"
                 worker[file_name] = ''
@@ -182,13 +183,17 @@ def variables_creation():
             worker[key] = response['id']
 
     if str(worker['workers_count']) != worker['saved_workers_count']:
+        apis = [worker['api']]
         for key in worker:
             if key.endswith('.txt'):
                 save_array_to_file(key, [])
                 drive_client.update_file(worker[key], key)
-        for app in heroku3.from_key(worker['api']).apps():
-            config = app.config()
-            config['workers_count'] = str(worker['workers_count'])
+        if worker['another_api']:
+            apis.append(worker['another_api'])
+        for api in apis:
+            for app in heroku3.from_key(api).apps():
+                config = app.config()
+                config['workers_count'] = str(worker['workers_count'])
 
     for key in worker:
         if key.endswith('.txt'):
