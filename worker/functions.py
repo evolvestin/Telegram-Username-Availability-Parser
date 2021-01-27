@@ -42,7 +42,7 @@ def save_array_to_file(path, array):
     file.close()
 
 
-def combinations_generate(db: dict = False, combinations_count=False):
+def combinations_generate(combinations_count=False):
     global worker
     chunk = []
     counter = 0
@@ -55,9 +55,8 @@ def combinations_generate(db: dict = False, combinations_count=False):
                     username += 'bot'
                 if username.endswith('_') is False:
                     counter += 1
-                    if counter in worker['range'] and combinations_count is False and db:
-                        if username not in db[f"{worker['prefix']}_used.txt"]:
-                            chunk.append(username)
+                    if counter in worker['range'] and combinations_count is False:
+                        chunk.append(username)
                     elif combinations_count:
                         worker['combinations_count'] += 1
     return chunk
@@ -196,7 +195,8 @@ def variables_creation():
                 db[key] = text.split(' ')
             file.close()
 
-    combs = combinations_generate(db)
+    combs = combinations_generate()
+    combs = list(set(combs) - set(db[f"{worker['prefix']}_used.txt"]))
     return db, [combs[i:i + 300] for i in range(0, len(combs), 300)]
 
 
