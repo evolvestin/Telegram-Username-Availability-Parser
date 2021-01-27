@@ -42,7 +42,7 @@ def save_array_to_file(path, array):
     file.close()
 
 
-def combinations_generate(combinations_count=False):
+def combinations_generate(db: dict = False, combinations_count=False):
     global worker
     chunk = []
     counter = 0
@@ -55,8 +55,9 @@ def combinations_generate(combinations_count=False):
                     username += 'bot'
                 if username.endswith('_') is False:
                     counter += 1
-                    if counter in worker['range'] and combinations_count is False:
-                        chunk.append(username)
+                    if counter in worker['range'] and combinations_count is False and db:
+                        if username not in db[f"{worker['prefix']}_used.txt"]:
+                            chunk.append(username)
                     elif combinations_count:
                         worker['combinations_count'] += 1
     return chunk
@@ -68,38 +69,30 @@ def checking():
     if combinations:
         while True:
             try:
-                counter = 0
-                results = []
-                futures = []
-                for username in combinations:
-                    if username not in array_db[f"{worker['prefix']}_used.txt"] and worker['status'] != '✅':
-                        counter += 1
-                        if counter <= 300:
-                            futures.append(t_me + username)
-                        else:
-                            break
+                for futures in combinations:
+                    results = []
+                    stamp = datetime.now().timestamp()
+                    if worker['status'] != '✅':
+                        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
+                            futures = [future_executor.submit(requests.get, future) for future in futures]
+                            for future in concurrent.futures.as_completed(futures):
+                                results.append(future.result())
 
-                stamp = datetime.now().timestamp()
-                with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
-                    futures = [future_executor.submit(requests.get, future) for future in futures]
-                    for future in concurrent.futures.as_completed(futures):
-                        results.append(future.result())
+                    for result in results:
+                        soup = BeautifulSoup(result.content, 'html.parser')
+                        url = soup.find('meta', {'name': 'twitter:app:url:googleplay'})
+                        is_username_exist = soup.find('a', class_='tgme_action_button_new')
+                        if url:
+                            username = re.sub(t_me, '', str(url.get('content')))
+                            if username not in ['None', '']:
+                                if is_username_exist is None:
+                                    array_db[f"{worker['prefix']}_clear.txt"].append(username)
+                                array_db[f"{worker['prefix']}_used.txt"].append(username)
 
-                for result in results:
-                    soup = BeautifulSoup(result.content, 'html.parser')
-                    url = soup.find('meta', {'name': 'twitter:app:url:googleplay'})
-                    is_username_exist = soup.find('a', class_='tgme_action_button_new')
-                    if url:
-                        username = re.sub(t_me, '', str(url.get('content')))
-                        if username not in ['None', '']:
-                            if is_username_exist is None:
-                                array_db[f"{worker['prefix']}_clear.txt"].append(username)
-                            array_db[f"{worker['prefix']}_used.txt"].append(username)
-
-                delay = int(60 - datetime.now().timestamp() + stamp) + 1
-                if delay < 0:
-                    delay = 0
-                sleep(delay)
+                    delay = int(60 - datetime.now().timestamp() + stamp) + 1
+                    if delay < 0:
+                        delay = 0
+                    sleep(delay)
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
 
@@ -119,7 +112,7 @@ def files_upload():
                         drive_client = Drive('google.json')
                         drive_client.update_file(worker[key], key)
 
-            if len(temp_db[f"{worker['prefix']}_used.txt"]) == len(combinations):
+            if len(temp_db[f"{worker['prefix']}_used.txt"]) == len(worker['range']):
                 worksheet = gspread.service_account('google.json').open('master').worksheet('main')
                 resources = worksheet.get('A1:Z50000')
                 worker['status'] = '✅'
@@ -203,8 +196,8 @@ def variables_creation():
                 db[key] = text.split(' ')
             file.close()
 
-    combs = combinations_generate()
-    return db, combs
+    combs = combinations_generate(db)
+    return db, [combs[i:i + 300] for i in range(0, len(combs), 300)]
 
 
 def start():
