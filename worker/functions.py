@@ -68,12 +68,12 @@ def checking():
     if combinations:
         while True:
             try:
-                for futures in combinations:
+                for chunk in combinations:
                     results = []
                     stamp = datetime.now().timestamp()
                     if worker['status'] != '✅':
                         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
-                            futures = [future_executor.submit(requests.get, future) for future in futures]
+                            futures = [future_executor.submit(requests.get, future) for future in chunk]
                             for future in concurrent.futures.as_completed(futures):
                                 results.append(future.result())
 
