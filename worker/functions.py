@@ -197,6 +197,7 @@ def variables_creation():
 
     combs = combinations_generate()
     combs = list(set(combs) - set(db[f"{worker['prefix']}_used.txt"]))
+    print('len(combs) =', len(combs))
     return db, [combs[i:i + 300] for i in range(0, len(combs), 300)]
 
 
@@ -204,10 +205,9 @@ def start():
     global array_db, combinations
     if os.environ.get('api'):
         array_db, combinations = variables_creation()
-        print('len(combs) =', len(combinations))
-        print(objects.time_now() - stamp1)
         for m in worker:
             print(m + ':', worker[m])
+        print('len(sessions) =', len(combinations))
         print('len(array_db[' + worker['prefix'] + '_used.txt]) =', len(array_db[worker['prefix'] + '_used.txt']))
         if worker['prefix'] and worker['folder']:
             print('Запуск скрипта за', objects.time_now() - stamp1, 'секунд')
