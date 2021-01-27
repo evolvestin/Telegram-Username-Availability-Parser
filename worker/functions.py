@@ -73,7 +73,7 @@ def checking():
                     stamp = datetime.now().timestamp()
                     if worker['status'] != '✅':
                         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
-                            futures = [future_executor.submit(requests.get, future) for future in chunk]
+                            futures = [future_executor.submit(requests.get, t_me + future) for future in chunk]
                             for future in concurrent.futures.as_completed(futures):
                                 results.append(future.result())
 
