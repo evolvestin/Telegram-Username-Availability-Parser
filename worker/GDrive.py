@@ -21,10 +21,6 @@ class Drive:
         credentials = service_account.Credentials.from_service_account_file(path, scopes=scope)
         self.client = build('drive', 'v3', credentials=credentials)
 
-    def file(self, file_id):
-        response = self.client.files().get(fileId=file_id).execute()
-        return response
-
     def get_file_by_name(self, file_name, fields=standard_file_fields):
         response = None
         drive_response = self.client.files().list(pageSize=1000, fields=fields).execute()
@@ -34,7 +30,7 @@ class Drive:
                 break
         return response
 
-    def files(self, fields=standard_file_fields, only_folders=False, name_startswith=False):
+    def files(self, fields=standard_file_fields, only_folders=False, name_startswith=False, parents=False):
         query = ''
         response = []
         if only_folders:
@@ -43,6 +39,10 @@ class Drive:
             if query:
                 query += ' and '
             query += f"name contains '{name_startswith}'"
+        if parents:
+            if query:
+                query += ' and '
+            query += f"'{parents}' in parents"
         result = self.client.files().list(q=query, pageSize=1000, fields=fields).execute()
         for file in result['files']:
             response.append(revoke_time(file))
@@ -69,20 +69,3 @@ class Drive:
                 status, done = downloader.next_chunk()
             except IndexError and Exception:
                 done = False
-
-    def delete_file(self, file_id):
-        self.client.files().delete(fileId=file_id).execute()
-
-    def get_permissions(self, file_id):
-        response = self.client.permissions().list(fileId=file_id, fields=permission_fields).execute()
-        return response['permissions']
-
-    def move_file_to_folder(self, file_id, folder_id, remove_from_previous_folder=True):
-        file = self.client.files().get(fileId=file_id, fields='parents').execute()
-        previous_parents = ''
-        if remove_from_previous_folder:
-            previous_parents = ",".join(file.get('parents'))
-        self.client.files().update(fileId=file_id, addParents=folder_id, removeParents=previous_parents).execute()
-
-    def add_file_to_folder(self, file_id, folder_id):
-        self.client.files().update(fileId=file_id, addParents=folder_id).execute()
