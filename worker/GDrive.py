@@ -21,15 +21,6 @@ class Drive:
         credentials = service_account.Credentials.from_service_account_file(path, scopes=scope)
         self.client = build('drive', 'v3', credentials=credentials)
 
-    def get_file_by_name(self, file_name, fields=standard_file_fields):
-        response = None
-        drive_response = self.client.files().list(pageSize=1000, fields=fields).execute()
-        for file in drive_response['files']:
-            if file_name == file['name']:
-                response = revoke_time(file)
-                break
-        return response
-
     def files(self, fields=standard_file_fields, only_folders=False, name_startswith=False, parents=False):
         query = ''
         response = []
