@@ -62,6 +62,24 @@ def combinations_generate(combinations_count=False):
     return chunk
 
 
+def update_status_in_google(status):
+    global worker
+    worksheet = gspread.service_account('google.json').open('master').worksheet('main')
+    resources = worksheet.get('A1:Z50000')
+    worker['status'] = status
+    for row in resources:
+        if worker['api'] in row:
+            row[7] = worker['status']
+            values_indexes = range(0, len(row))
+            row_index = resources.index(row) + 1
+            google_range = f'A{row_index}:{ascii_uppercase[values_indexes[-1]]}{row_index}'
+            work_range = worksheet.range(google_range)
+            for i in values_indexes:
+                work_range[i].value = row[i]
+            worksheet.update_cells(work_range)
+            break
+
+
 def checking():
     global array_db
     from datetime import datetime
@@ -112,20 +130,7 @@ def files_upload():
                         drive_client.update_file(worker[key], key)
 
             if len(temp_db[f"{worker['prefix']}_used.txt"]) == len(worker['range']):
-                worksheet = gspread.service_account('google.json').open('master').worksheet('main')
-                resources = worksheet.get('A1:Z50000')
-                worker['status'] = '✅'
-                for row in resources:
-                    if worker['api'] in row:
-                        row[7] = worker['status']
-                        values_indexes = range(0, len(row))
-                        row_index = resources.index(row) + 1
-                        google_range = f'A{row_index}:{ascii_uppercase[values_indexes[-1]]}{row_index}'
-                        work_range = worksheet.range(google_range)
-                        for i in values_indexes:
-                            work_range[i].value = row[i]
-                        worksheet.update_cells(work_range)
-                        break
+                update_status_in_google('✅')
                 objects.printer('Цикл проверок доступности юзеров пройден.')
         except IndexError and Exception:
             ErrorAuth.thread_exec()
@@ -176,12 +181,13 @@ def variables_creation():
 
     if str(worker['workers_count']) != worker['saved_workers_count']:
         apis = [worker['api']]
+        if worker['another_api']:
+            apis.insert(0, worker['another_api'])
         for key in worker:
             if key.endswith('.txt'):
                 save_array_to_file(key, [])
                 drive_client.update_file(worker[key], key)
-        if worker['another_api']:
-            apis.append(worker['another_api'])
+        update_status_in_google('🅰️')
         for api in apis:
             for app in heroku3.from_key(api).apps():
                 config = app.config()
