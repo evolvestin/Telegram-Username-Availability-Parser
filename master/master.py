@@ -108,7 +108,7 @@ def google_update():
             for google_worker in resources:
                 if len(google_worker) == len(google_keys):
                     workers_count += 1
-                    if google_worker[google_keys.index('PROGRESS')] == '🅰️':
+                    if google_worker[google_keys.index('PROGRESS')] == '✅':
                         ended_workers_count += 1
             if str(workers_count) != master['workers_count']:
                 for worker in workers:
@@ -172,7 +172,7 @@ def google_update():
                     objects.printer(log_text)
                     for worker in workers:
                         worker['update'] = 1
-                        worker['status'] = '✅'
+                        worker['status'] = '🅰️'
                     sleep(100)
                 else:
                     log_text = objects.bold('Нарушена целостность массива\n(все workers закончили работу):\n') + \
