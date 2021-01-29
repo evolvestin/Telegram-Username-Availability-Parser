@@ -14,23 +14,6 @@ from itertools import product
 from string import ascii_lowercase, ascii_uppercase
 # ========================================================================================================
 stamp1 = objects.time_now()
-t_me = 'https://t.me/'
-objects.environmental_files()
-array_db, combinations = {}, []
-drive_client = Drive('google.json')
-ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
-
-worker = {
-    'row': 0,
-    'prefix': '',
-    'folder': '',
-    'status': '✅',
-    'another_api': '',
-    'workers_count': 0,
-    'range': range(0, 0),
-    'combinations_count': 0,
-    'api': os.environ.get('api'),
-    'saved_workers_count': os.environ.get('workers_count')}
 
 
 def save_array_to_file(path, array):
@@ -64,7 +47,9 @@ def combinations_generate(combinations_count=False):
 
 def update_status_in_google(status):
     global worker
-    worksheet = gspread.service_account('google.json').open('master').worksheet('main')
+    client = gspread.service_account('google.json')
+    spreadsheet = client.open_by_key(worker['master_sheet_id'])
+    worksheet = spreadsheet.worksheet('main')
     resources = worksheet.get('A1:Z50000')
     worker['status'] = status
     for row in resources:
@@ -138,7 +123,7 @@ def files_upload():
 
 def variables_creation():
     global worker
-    spreadsheet = gspread.service_account('google.json').open('master')
+    spreadsheet = gspread.service_account('google.json').open_by_key(worker['master_sheet_id'])
     resources = spreadsheet.worksheet('main').get('A1:Z50000')
     combinations_generate(combinations_count=True)
     worker['workers_count'] = len(resources) - 1
@@ -205,6 +190,26 @@ def variables_creation():
     combs = list(set(combs) - set(db[f"{worker['prefix']}_used.txt"]))
     print('len(combs) =', len(combs))
     return db, [combs[i:i + 300] for i in range(0, len(combs), 300)]
+
+
+worker = {
+    'row': 0,
+    'prefix': '',
+    'folder': '',
+    'status': '✅',
+    'another_api': '',
+    'workers_count': 0,
+    'range': range(0, 0),
+    'combinations_count': 0,
+    'api': os.environ.get('api'),
+    'saved_workers_count': os.environ.get('workers_count'),
+    'master_sheet_id': '1OdAyu4zUTgww6AXaCeuJwT6OJzokWqPxPpjx1zbKvKQ'}
+
+t_me = 'https://t.me/'
+objects.environmental_files()
+array_db, combinations = {}, []
+drive_client = Drive('google.json')
+ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
 
 
 def start():
