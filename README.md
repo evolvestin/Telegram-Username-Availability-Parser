@@ -1,1 +1,3 @@
-# Telegram-Username-Availability-Parser
+# Change Log
+`29.01.2021` - Первая рабочая версия master-скрипта.
+`28.01.2021` - Вероятно, окончательная версия worker-скрипта.
