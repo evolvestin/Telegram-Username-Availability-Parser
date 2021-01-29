@@ -224,6 +224,3 @@ def start(stamp):
         checking()
 
     ErrorAuth.start_message(stamp, f"\nОшибка с переменными окружения.\n{objects.bold('Бот выключен')}")
-
-
-start(objects.time_now())
