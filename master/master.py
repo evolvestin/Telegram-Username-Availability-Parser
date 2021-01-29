@@ -14,7 +14,8 @@ from string import ascii_lowercase, ascii_uppercase
 def variables_creation():
     global master
     objects.environmental_files()
-    sheet = gspread.service_account('google.json').open('master').worksheet('main')
+    client = gspread.service_account('google.json')
+    sheet = client.open_by_key(master['sheet_id']).worksheet('main')
     drive_client = Drive('google.json')
     resources = sheet.get('A1:Z50000')
     keys = resources.pop(0)
@@ -81,7 +82,8 @@ def google_update():
             try:
                 resources = worksheet.get('A1:Z50000')
             except IndexError and Exception:
-                worksheet = gspread.service_account('google.json').open('master').worksheet('main')
+                client = gspread.service_account('google.json')
+                worksheet = client.open_by_key(master['sheet_id']).worksheet('main')
                 resources = worksheet.get('A1:Z50000')
             for worker in workers:
                 if worker['update'] == 1:
@@ -90,9 +92,10 @@ def google_update():
                         if worker['PREFIX'] in row:
                             row_index = resources.index(row) + 1
                     values_indexes = range(0, len(google_keys))
+                    client = gspread.service_account('google.json')
                     connection = heroku3.from_key(worker[f"HEROKU API {worker['server']}"])
                     google_range = f'A{row_index}:{ascii_uppercase[values_indexes[-1]]}{row_index}'
-                    worksheet = gspread.service_account('google.json').open('master').worksheet('main')
+                    worksheet = client.open_by_key(master['sheet_id']).worksheet('main')
                     work_range = worksheet.range(google_range)
                     for i in values_indexes:
                         work_range[i].value = worker[google_keys[i]]
@@ -204,7 +207,8 @@ master = {
     'logs_created_time': 0,
     'api': os.environ.get('api'),
     'another_api': os.environ.get('another_api'),
-    'workers_count': os.environ.get('workers_count')}
+    'workers_count': os.environ.get('workers_count'),
+    'sheet_id': '1OdAyu4zUTgww6AXaCeuJwT6OJzokWqPxPpjx1zbKvKQ'}
 
 t_me = 'https://t.me/'
 Auth = objects.AuthCentre(os.environ['DEV-TOKEN'])
@@ -224,3 +228,7 @@ def start(stamp):
         checking()
 
     ErrorAuth.start_message(stamp, f"\nОшибка с переменными окружения.\n{objects.bold('Бот выключен')}")
+
+
+if os.environ.get('local'):
+    start(objects.time_now())
