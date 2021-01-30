@@ -116,7 +116,7 @@ def files_upload():
                         drive_client = Drive('google.json')
                         drive_client.update_file(worker[key], key)
 
-            if len(temp_db[f"{worker['prefix']}_used.txt"]) == len(worker['range']):
+            if len(temp_db[f"{worker['prefix']}_used.txt"]) == len(worker['range']) - 1:
                 update_status_in_google('✅')
                 objects.printer('Цикл проверок доступности юзеров пройден.')
         except IndexError and Exception:
@@ -227,5 +227,5 @@ def start():
             _thread.start_new_thread(files_upload, ())
             checking()
 
-    ErrorAuth.start_message(stamp1, f"\nОшибка с переменными окружения.\n{objects.bold('Бот выключен')}")
+    ErrorAuth.start_message(stamp1, f"\nОшибка с переменными окружения.\n{objects.bold('Скрипт выключен')}")
 # ========================================================================================================
