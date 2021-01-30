@@ -68,38 +68,37 @@ def update_status_in_google(status):
 def checking():
     global array_db
     from datetime import datetime
-    if combinations:
-        while True:
-            try:
-                for chunk in combinations:
-                    results = []
-                    stamp = datetime.now().timestamp()
-                    if worker['status'] != '✅':
-                        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
-                            futures = [future_executor.submit(requests.get, t_me + future) for future in chunk]
-                            for future in concurrent.futures.as_completed(futures):
-                                results.append(future.result())
+    while True:
+        try:
+            for chunk in combinations:
+                results = []
+                stamp = datetime.now().timestamp()
+                if worker['status'] != '✅':
+                    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as future_executor:
+                        futures = [future_executor.submit(requests.get, t_me + future) for future in chunk]
+                        for future in concurrent.futures.as_completed(futures):
+                            results.append(future.result())
 
-                    for result in results:
-                        soup = BeautifulSoup(result.content, 'html.parser')
-                        url = soup.find('meta', {'name': 'twitter:app:url:googleplay'})
-                        is_username_exist = soup.find('a', class_='tgme_action_button_new')
-                        if url:
-                            username = re.sub(t_me, '', str(url.get('content')))
-                            if username not in ['None', '']:
-                                if is_username_exist is None:
-                                    array_db[f"{worker['prefix']}_clear.txt"].append(username)
-                                array_db[f"{worker['prefix']}_used.txt"].append(username)
+                for result in results:
+                    soup = BeautifulSoup(result.content, 'html.parser')
+                    url = soup.find('meta', {'name': 'twitter:app:url:googleplay'})
+                    is_username_exist = soup.find('a', class_='tgme_action_button_new')
+                    if url:
+                        username = re.sub(t_me, '', str(url.get('content')))
+                        if username not in ['None', '']:
+                            if is_username_exist is None:
+                                array_db[f"{worker['prefix']}_clear.txt"].append(username)
+                            array_db[f"{worker['prefix']}_used.txt"].append(username)
 
-                    delay = int(60 - datetime.now().timestamp() + stamp) + 1
-                    if delay < 0:
-                        delay = 0
-                    sleep(delay)
-                if len(combinations) == 0:
-                    print('Ожидаем перезапуска от master скрипта')
-                    sleep(500)
-            except IndexError and Exception:
-                ErrorAuth.thread_exec()
+                delay = int(60 - datetime.now().timestamp() + stamp) + 1
+                if delay < 0:
+                    delay = 0
+                sleep(delay)
+            if len(combinations) == 0:
+                print('Ожидаем перезапуска от master скрипта')
+                sleep(500)
+        except IndexError and Exception:
+            ErrorAuth.thread_exec()
 
 
 def files_upload():
