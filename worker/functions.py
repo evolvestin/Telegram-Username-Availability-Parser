@@ -95,6 +95,9 @@ def checking():
                     if delay < 0:
                         delay = 0
                     sleep(delay)
+                if len(combinations) == 0:
+                    print('Ожидаем перезапуска от master скрипта')
+                    sleep(500)
             except IndexError and Exception:
                 ErrorAuth.thread_exec()
 
