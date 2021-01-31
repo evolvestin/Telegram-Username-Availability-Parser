@@ -146,7 +146,7 @@ def google_update():
                     local_file.close()
                     os.remove(file['name'])
 
-                if master['max_users_count'] >= logs_db['used_count']:
+                if logs_db['used_count'] >= master['max_users_count']:
                     step = 50
                     array = ' '.join(logs_db['clear'])
                     chunks = [array[offset: offset + 50000] for offset in range(0, len(array), 50000)]
