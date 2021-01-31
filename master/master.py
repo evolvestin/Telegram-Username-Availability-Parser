@@ -100,6 +100,7 @@ def google_update():
                     work_range = worksheet.range(google_range)
                     for i in values_indexes:
                         work_range[i].value = worker[google_keys[i]]
+                    print(work_range)
                     worksheet.update_cells(work_range)
                     for app in connection.apps():
                         app.restart()
@@ -172,9 +173,8 @@ def google_update():
                             if request_counter == 50:
                                 request_counter = 0
                                 sleep(100)
-                    log_text = 'Успешно записана информация в telegram_usernames/' \
-                               f"logs-{master['logs_number']}/"
-                    objects.printer(log_text)
+                    log_text = 'Успешно записана информация в telegram_usernames'
+                    objects.printer(f"{log_text}/logs-{master['logs_number']}/")
                     for worker in workers:
                         worker['update'] = 1
                         worker['PROGRESS'] = '🅰️'
