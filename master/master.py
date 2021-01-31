@@ -151,9 +151,9 @@ def google_update():
                     array = ' '.join(logs_db['clear'])
                     chunks = [array[offset: offset + 50000] for offset in range(0, len(array), 50000)]
                     spreadsheet = gspread.service_account('google.json').create('logs', master['logs_id'])
-                    worksheet = spreadsheet.sheet1
-                    worksheet.resize(rows=len(chunks), cols=1)
-                    spreadsheet.batch_update(objects.properties_json(worksheet.id, len(chunks), chunks[:step]))
+                    logs_worksheet = spreadsheet.sheet1
+                    logs_worksheet.resize(rows=len(chunks), cols=1)
+                    spreadsheet.batch_update(objects.properties_json(logs_worksheet.id, len(chunks), chunks[:step]))
                     if len(chunks) > step:
                         request_counter = 1
                         for loop in range(step, len(chunks), step):
@@ -161,11 +161,11 @@ def google_update():
                             row_end = row_begin + step
                             if row_end > len(chunks):
                                 row_end = len(chunks)
-                            work_range = worksheet.range(f'A{row_begin}:A{row_end}')
+                            work_range = logs_worksheet.range(f'A{row_begin}:A{row_end}')
                             for row in range(row_begin, row_end + 1):
                                 if row <= len(chunks):
                                     work_range[row - loop - 1].value = chunks[row - 1]
-                            worksheet.update_cells(work_range)
+                            logs_worksheet.update_cells(work_range)
                             request_counter += 1
                             if request_counter == 50:
                                 request_counter = 0
