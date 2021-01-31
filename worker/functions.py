@@ -119,6 +119,7 @@ def files_upload():
             if len(temp_db[f"{worker['prefix']}_used.txt"]) >= len(worker['range']):
                 update_status_in_google('✅')
                 objects.printer('Цикл проверок доступности юзеров пройден.')
+                _thread.exit()
         except IndexError and Exception:
             ErrorAuth.thread_exec()
 
@@ -166,7 +167,7 @@ def variables_creation():
             objects.printer(f'{key} создан')
             worker[key] = response['id']
 
-    if str(worker['workers_count']) != worker['saved_workers_count']:
+    if str(worker['workers_count']) != worker['saved_workers_count'] or worker['status'] == '♿':
         apis = [worker['api']]
         if worker['another_api']:
             apis.insert(0, worker['another_api'])
