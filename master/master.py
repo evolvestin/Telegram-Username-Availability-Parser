@@ -79,6 +79,7 @@ def google_update():
     while True:
         try:
             sleep(20)
+            google_updated = True
             try:
                 resources = worksheet.get('A1:Z50000')
             except IndexError and Exception:
@@ -102,6 +103,7 @@ def google_update():
                     worksheet.update_cells(work_range)
                     for app in connection.apps():
                         app.restart()
+                    google_updated = False
                     worker['update'] = 0
                     sleep(5)
 
@@ -123,7 +125,7 @@ def google_update():
                     for app in connection.apps():
                         config = app.config()
                         config['workers_count'] = str(workers_count)
-            if workers_count == ended_workers_count:
+            if workers_count == ended_workers_count and google_updated:
                 drive_client = Drive('google.json')
                 logs_db = {'clear': [], 'used_count': 0}
                 objects.printer('Цикл проверок доступности юзеров пройден. '
@@ -175,7 +177,7 @@ def google_update():
                     objects.printer(log_text)
                     for worker in workers:
                         worker['update'] = 1
-                        worker['status'] = '🅰️'
+                        worker['PROGRESS'] = '🅰️'
                     logs_db.clear()
                     sleep(100)
                 else:
