@@ -78,7 +78,7 @@ def google_update():
     global worksheet, workers
     while True:
         try:
-            sleep(0)
+            sleep(20)
             try:
                 resources = worksheet.get('A1:Z50000')
             except IndexError and Exception:
@@ -146,7 +146,7 @@ def google_update():
                     local_file.close()
                     os.remove(file['name'])
 
-                if master['max_users_count'] == logs_db['used_count']:
+                if master['max_users_count'] >= logs_db['used_count']:
                     step = 50
                     array = ' '.join(logs_db['clear'])
                     chunks = [array[offset: offset + 50000] for offset in range(0, len(array), 50000)]
@@ -176,6 +176,7 @@ def google_update():
                     for worker in workers:
                         worker['update'] = 1
                         worker['status'] = '🅰️'
+                    logs_db.clear()
                     sleep(100)
                 else:
                     log_text = objects.bold('Нарушена целостность массива\n(все workers закончили работу):\n') + \
@@ -183,8 +184,8 @@ def google_update():
                         f"Длина полученного массива = {objects.code(logs_db['used_count'])}"
                     objects.printer(re.sub('<.*?>', '', log_text))
                     ErrorAuth.send_dev_message(log_text, tag=None)
+                    logs_db.clear()
                     sleep(10800)
-            sleep(300)
         except IndexError and Exception:
             ErrorAuth.thread_exec()
 
