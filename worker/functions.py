@@ -116,7 +116,7 @@ def files_upload():
                         drive_client = Drive('google.json')
                         drive_client.update_file(worker[key], key)
 
-            if len(temp_db[f"{worker['prefix']}_used.txt"]) >= len(worker['range']) and worker['status'] == '🅰️':
+            if len(temp_db[f"{worker['prefix']}_used.txt"]) >= len(worker['range']) - 1 and worker['status'] == '🅰️':
                 update_status_in_google('✅')
                 objects.printer('Цикл проверок доступности юзеров пройден.')
                 _thread.exit()
