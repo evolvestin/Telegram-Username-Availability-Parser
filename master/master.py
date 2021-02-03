@@ -7,6 +7,7 @@ import _thread
 from time import sleep
 from GDrive import Drive
 from itertools import product
+from collections import Counter
 from string import ascii_lowercase, ascii_uppercase
 # ========================================================================================================
 
@@ -149,8 +150,9 @@ def google_update():
                     os.remove(file['name'])
 
                 if logs_db['used_count'] >= master['max_users_count']:
+                    array = ' '.join(list(Counter(logs_db['clear'])))
+                    logs_db.clear()
                     step = 50
-                    array = ' '.join(logs_db['clear'])
                     chunks = [array[offset: offset + 50000] for offset in range(0, len(array), 50000)]
                     spreadsheet = gspread.service_account('google.json').create('logs', master['logs_id'])
                     logs_worksheet = spreadsheet.sheet1
@@ -177,7 +179,6 @@ def google_update():
                     for worker in workers:
                         worker['update'] = 1
                         worker['PROGRESS'] = '♿'
-                    logs_db.clear()
                     sleep(100)
                 else:
                     log_text = objects.bold('Нарушена целостность массива\n(все workers закончили работу):\n') + \
