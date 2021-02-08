@@ -48,7 +48,7 @@ class Drive:
             except IndexError and Exception:
                 done = False
 
-    def files(self, fields=standard_file_fields, only_folders=False, name_startswith=False, parents=False):
+    def files(self, fields=standard_file_fields, only_folders=None, name_startswith=None, parents=None):
         query = ''
         response = []
         if only_folders:
