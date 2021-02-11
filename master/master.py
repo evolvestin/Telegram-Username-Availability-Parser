@@ -1,15 +1,96 @@
+import io
 import os
 import re
+import pickle
 import gspread
 import objects
 import heroku3
-import _thread
 from time import sleep
-from GDrive import Drive
+from copy import deepcopy
 from itertools import product
-from collections import Counter
+from datetime import datetime
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 from string import ascii_lowercase, ascii_uppercase
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 # ========================================================================================================
+standard_file_fields = 'files(id, name, parents, createdTime, modifiedTime)'
+
+
+class Drive:
+    def __init__(self, path):
+        scope = ['https://www.googleapis.com/auth/drive']
+        credentials = service_account.Credentials.from_service_account_file(path, scopes=scope)
+        self.client = build('drive', 'v3', credentials=credentials)
+
+    @staticmethod
+    def revoke_time(file):
+        for key in ['modifiedTime', 'createdTime']:
+            if file.get(key):
+                stamp = re.sub(r'\..*?Z', '', file[key])
+                file[key] = objects.stamper(stamp, '%Y-%m-%dT%H:%M:%S')
+        return file
+
+    def update_file(self, file_id, file_path):
+        media_body = MediaFileUpload(file_path, resumable=True)
+        return self.client.files().update(fileId=file_id, media_body=media_body).execute()
+
+    def file(self, file_id):
+        fields = 'id, name, parents, createdTime, modifiedTime'
+        result = self.client.files().get(fileId=file_id, fields=fields).execute()
+        return self.revoke_time(result)
+
+    def create_folder(self, name, folder_id):
+        file_metadata = {'name': name, 'parents': [folder_id], 'mimeType': 'application/vnd.google-apps.folder'}
+        result = self.client.files().create(body=file_metadata, fields='id, name, createdTime').execute()
+        return self.revoke_time(result)
+
+    def download_file(self, file_id, file_path):
+        done = False
+        file = io.FileIO(file_path, 'wb')
+        downloader = MediaIoBaseDownload(file, self.client.files().get_media(fileId=file_id))
+        while done is False:
+            try:
+                status, done = downloader.next_chunk()
+            except IndexError and Exception:
+                done = False
+
+    def files(self, fields=standard_file_fields, only_folders=None, name_startswith=None, parents=None):
+        query = ''
+        response = []
+        if only_folders:
+            query = "mimeType='application/vnd.google-apps.folder'"
+        if name_startswith:
+            if query:
+                query += ' and '
+            query += f"name contains '{name_startswith}'"
+        if parents:
+            if query:
+                query += ' and '
+            query += f"'{parents}' in parents"
+        result = self.client.files().list(q=query, pageSize=1000, fields=fields).execute()
+        for file in result['files']:
+            response.append(self.revoke_time(file))
+        return response
+
+
+def to_len(value):
+    if type(value) == list:
+        value = len(value)
+    return value
+
+
+def clear_stats(stamp):
+    response = {'stamp': stamp}
+    for stats_key in ['cleared', 'used']:
+        response[stats_key] = {'5': []}
+        for i in [2, 3, 4, 'any']:
+            response[stats_key][f'{i}+bot'] = []
+        for deep_key in list(response[stats_key]):
+            response[stats_key][f'_{deep_key}'] = []
+            if deep_key.startswith('any'):
+                response[stats_key]['any+_bot'] = []
+    return response
 
 
 def variables_creation():
@@ -75,7 +156,7 @@ def variables_creation():
 # ========================================================================================================
 
 
-def google_update():
+def logs_to_google():
     global worksheet, workers
     while True:
         try:
@@ -129,6 +210,7 @@ def google_update():
             if workers_count == ended_workers_count and google_updated:
                 drive_client = Drive('google.json')
                 logs_db = {'clear': [], 'used_count': 0}
+                logs = {'previous': {'id': '', 'createdTime': 0}}
                 objects.printer('Цикл проверок доступности юзеров пройден. '
                                 'Записываем список свободных username в google')
 
@@ -150,14 +232,24 @@ def google_update():
                     os.remove(file['name'])
 
                 if logs_db['used_count'] >= master['max_users_count']:
-                    array = ' '.join(list(Counter(logs_db['clear'])))
+                    logs_set = set(logs_db['clear'])
                     logs_db.clear()
                     step = 50
-                    chunks = [array[offset: offset + 50000] for offset in range(0, len(array), 50000)]
+                    with open('main', 'wb') as file:
+                        pickle.dump(logs_set, file)
+                    text = ' '.join(list(logs_set))
+                    logs_set.clear()
+                    for worker in workers:
+                        worker['update'] = 1
+                        worker['PROGRESS'] = '♿'
                     spreadsheet = gspread.service_account('google.json').create('logs', master['logs_id'])
+                    chunks = [text[offset: offset + 50000] for offset in range(0, len(text), 50000)]
                     logs_worksheet = spreadsheet.sheet1
+                    this_logs = drive_client.file(spreadsheet.id)
                     logs_worksheet.resize(rows=len(chunks), cols=1)
+                    creation_year = datetime.utcfromtimestamp(this_logs['createdTime']).strftime('%Y')
                     spreadsheet.batch_update(objects.properties_json(logs_worksheet.id, len(chunks), chunks[:step]))
+                    this_logs['creation_year'] = int(creation_year)
                     if len(chunks) > step:
                         request_counter = 1
                         for loop in range(step, len(chunks), step):
@@ -174,11 +266,99 @@ def google_update():
                             if request_counter == 50:
                                 request_counter = 0
                                 sleep(100)
+
                     log_text = 'Успешно записана информация в telegram_usernames'
                     objects.printer(f"{log_text}/logs-{master['logs_number']}/")
-                    for worker in workers:
-                        worker['update'] = 1
-                        worker['PROGRESS'] = '♿'
+                    logs.update({i: this_logs for i in logs_keys})
+                    drive_client = Drive('google.json')
+                    stats_files = {}
+                    full_stats = {}
+                    folders_id = []
+                    files = []
+
+                    for folder in drive_client.files(only_folders=True):
+                        if folder['name'].startswith('logs'):
+                            folders_id.append(folder['id'])
+                        if folder['name'].startswith('arrays'):
+                            stats_files['folder_id'] = folder['id']
+
+                    for folder in folders_id:
+                        for file in drive_client.files(parents=folder):
+                            creation_year = datetime.utcfromtimestamp(file['createdTime']).strftime('%Y')
+                            file['creation_year'] = int(creation_year)
+                            files.append(file)
+
+                    for file in drive_client.files(parents=stats_files['folder_id']):
+                        stats_files[file['name']] = file['id']
+
+                    for file in files:
+                        if file['createdTime'] >= logs['previous']['createdTime'] and \
+                                file['id'] != logs['this']['id']:
+                            logs['previous'] = deepcopy(file)
+                        if file['createdTime'] <= logs['first_in_year']['createdTime'] and \
+                                file['creation_year'] == logs['this']['creation_year']:
+                            logs['first_in_year'] = deepcopy(file)
+                        if file['createdTime'] <= logs['first_ever']['createdTime']:
+                            logs['first_ever'] = deepcopy(file)
+                        if logs['this']['createdTime'] - 30 * 24 * 60 * 60 <= file['createdTime']:
+                            logs['month_ago'] = deepcopy(file)
+                        if logs['this']['createdTime'] - 7 * 24 * 60 * 60 <= file['createdTime']:
+                            logs['week_ago'] = deepcopy(file)
+
+                    drive_client.update_file(stats_files['main'], 'main')
+                    for log_key in logs:
+                        stats = clear_stats(logs[log_key].get('createdTime'))
+                        if log_key == 'this':
+                            with open('main', 'rb') as file:
+                                db1 = pickle.load(file)
+                            arrays = {'cleared': list(db1)}
+                            del stats['used']
+                        else:
+                            logs_id = logs[log_key].get('id')
+                            with open('db2', 'wb') as file:
+                                client = gspread.service_account('google.json')
+                                google_values = client.open_by_key(logs_id).sheet1.col_values(1)
+                                pickle.dump(set(''.join(google_values).split(' ')), file)
+                                google_values.clear()
+                            with open('main', 'rb') as file:
+                                db1 = pickle.load(file)
+                            with open('db2', 'rb') as file:
+                                db2 = pickle.load(file)
+                            arrays = {'cleared': list(db2 - db1), 'used': list(db1 - db2)}
+                            os.remove('db2')
+                            db2.clear()
+                        db1.clear()
+                        for key in arrays:
+                            for username in arrays[key]:
+                                under = ''
+                                if username.endswith('bot'):
+                                    stats[key]['any+bot'].append(username)
+                                if '_' in username:
+                                    under = '_'
+                                    if username.endswith('_bot'):
+                                        stats[key]['any+_bot'].append(username)
+                                    if username.endswith('bot'):
+                                        stats[key]['_any+bot'].append(username)
+                                if len(username) == 5:
+                                    stats[key][f'{under}5'].append(username)
+                                else:
+                                    stats[key][f'{under}{len(username) - 3}+bot'].append(username)
+                        arrays.clear()
+                        with open(log_key, 'wb') as file:
+                            pickle.dump(stats, file)
+                        drive_client.update_file(stats_files[log_key], log_key)
+                        for key in stats:
+                            if type(stats[key]) == dict:
+                                for deep_key in stats[key]:
+                                    stats[key][deep_key] = to_len(stats[key][deep_key])
+                        full_stats.update({log_key: stats})
+                        os.remove(log_key)
+                        stats.clear()
+                    with open('stats', 'wb') as file:
+                        pickle.dump(full_stats, file)
+                    drive_client.update_file(stats_files['stats'], 'stats')
+                    os.remove('stats')
+                    os.remove('main')
                     sleep(100)
                 else:
                     log_text = objects.bold('Нарушена целостность массива\n(все workers закончили работу):\n') + \
@@ -188,15 +368,6 @@ def google_update():
                     ErrorAuth.send_dev_message(log_text, tag=None)
                     logs_db.clear()
                     sleep(10800)
-        except IndexError and Exception:
-            ErrorAuth.thread_exec()
-
-
-def checking():
-    global worksheet
-    while True:
-        try:
-            sleep(20)
         except IndexError and Exception:
             ErrorAuth.thread_exec()
 
@@ -217,6 +388,7 @@ t_me = 'https://t.me/'
 Auth = objects.AuthCentre(os.environ['DEV-TOKEN'])
 google_keys, worksheet, workers = variables_creation()
 ErrorAuth = objects.AuthCentre(os.environ['ERROR-TOKEN'])
+logs_keys = ['this', 'week_ago', 'month_ago', 'first_ever', 'first_in_year']
 # ========================================================================================================
 
 
@@ -225,10 +397,9 @@ def start(stamp):
         if master[key] in ['', 0, None]:
             break
     else:
-        _thread.start_new_thread(google_update, ())
         if os.environ.get('local') is None:
             Auth.start_message(stamp)
-        checking()
+        logs_to_google()
 
     ErrorAuth.start_message(stamp, f"\nОшибка с переменными окружения.\n{objects.bold('Бот выключен')}")
 
