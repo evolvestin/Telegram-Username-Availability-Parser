@@ -240,7 +240,7 @@ def variables_creation():
                 db[key] = pickle.load(file)
 
     combs = combinations_generate()
-    combs = list(set(combs) - set(db[f"{worker['prefix']}_used.txt"]))
+    combs = list(set(combs) - set(db[f"{worker['prefix']}_used"]))
     print('len(combs) =', len(combs))
     return db, [combs[i:i + 300] for i in range(0, len(combs), 300)]
 
@@ -272,7 +272,7 @@ def start():
         for m in worker:
             print(m + ':', worker[m])
         print('len(sessions) =', len(combinations))
-        print('len(array_db[' + worker['prefix'] + '_used.txt]) =', len(array_db[worker['prefix'] + '_used.txt']))
+        print('len(array_db[' + worker['prefix'] + '_used]) =', len(array_db[worker['prefix'] + '_used']))
         if worker['prefix'] and worker['folder']:
             print('Запуск скрипта за', objects.time_now() - stamp1, 'секунд')
             _thread.start_new_thread(files_upload, ())
