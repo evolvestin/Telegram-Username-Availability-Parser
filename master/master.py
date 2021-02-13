@@ -222,13 +222,13 @@ def logs_to_google():
 
                 for file in drive_client.files(parents=master['temp_id']):
                     drive_client.download_file(file['id'], file['name'])
-                    local_file = open(file['name'], 'r')
-                    array = local_file.read().split(' ')
-                    if 'clear' in file['name']:
-                        logs_db['clear'].extend(array)
-                    else:
-                        logs_db['used_count'] += len(array)
-                    local_file.close()
+                    with open(file['name'], 'rb') as local_file:
+                        array = pickle.load(local_file)
+                        if 'clear' in file['name']:
+                            logs_db['clear'].extend(array)
+                        else:
+                            logs_db['used_count'] += len(array)
+                        array.clear()
                     os.remove(file['name'])
 
                 if logs_db['used_count'] >= master['max_users_count']:
