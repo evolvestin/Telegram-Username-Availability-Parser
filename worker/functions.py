@@ -236,7 +236,7 @@ def variables_creation():
 
     for key in worker:
         if key.endswith(('clear', 'used')):
-            with open('main', 'rb') as file:
+            with open(key, 'rb') as file:
                 db[key] = pickle.load(file)
 
     combs = combinations_generate()
