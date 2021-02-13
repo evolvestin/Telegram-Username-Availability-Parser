@@ -162,7 +162,7 @@ def files_upload():
             for key in worker:
                 if key.endswith(('clear', 'used')):
                     save_array_to_file(key, temp_db[key])
-                    description = f"len({key}) = {len(temp_db[key])} / {worker['range'][-1]}"
+                    description = f"len({key}) = {len(temp_db[key])} / {len(worker['range'])}"
                     try:
                         drive_client.update_file(worker[key], key, description)
                     except IndexError and Exception:
@@ -227,7 +227,7 @@ def variables_creation():
         for key in worker:
             if key.endswith(('clear', 'used')):
                 save_array_to_file(key, [])
-                drive_client.update_file(worker[key], key, f"len({key}) = 0 / {worker['range'][-1]}")
+                drive_client.update_file(worker[key], key, f"len({key}) = 0 / {len(worker['range'])}")
         update_status_in_google('🅰️')
         for api in apis:
             for app in heroku3.from_key(api).apps():
