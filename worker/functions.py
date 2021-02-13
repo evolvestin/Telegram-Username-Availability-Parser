@@ -1,6 +1,7 @@
 import io
 import os
 import re
+import pickle
 import heroku3
 import gspread
 import objects
@@ -26,10 +27,10 @@ class Drive:
         credentials = service_account.Credentials.from_service_account_file(path, scopes=scope)
         self.client = build('drive', 'v3', credentials=credentials)
 
-    def update_file(self, file_id, file_path):
+    def update_file(self, file_id, file_path, description=''):
+        file_metadata = {'description': description}
         media_body = MediaFileUpload(file_path, resumable=True)
-        response = self.client.files().update(fileId=file_id, media_body=media_body).execute()
-        return response
+        return self.client.files().update(fileId=file_id, media_body=media_body, body=file_metadata).execute()
 
     def create_file(self, file_path, folder_id, same_file_name='True'):
         if same_file_name == 'True':
@@ -72,12 +73,8 @@ class Drive:
 
 
 def save_array_to_file(path, array):
-    file = open(path, 'w')
-    text = ' '.join(array)
-    if text == '':
-        text = 'CLEAR_FILE_FILLER'
-    file.write(text)
-    file.close()
+    with open(path, 'wb') as file:
+        pickle.dump(array, file)
 
 
 def combinations_generate(combinations_count=False):
@@ -142,8 +139,8 @@ def checking():
                         username = re.sub(t_me, '', str(url.get('content')))
                         if username not in ['None', '']:
                             if is_username_exist is None:
-                                array_db[f"{worker['prefix']}_clear.txt"].append(username)
-                            array_db[f"{worker['prefix']}_used.txt"].append(username)
+                                array_db[f"{worker['prefix']}_clear"].append(username)
+                            array_db[f"{worker['prefix']}_used"].append(username)
 
                 delay = int(60 - datetime.now().timestamp() + stamp) + 1
                 if delay < 0:
@@ -163,15 +160,16 @@ def files_upload():
             sleep(100)
             temp_db = deepcopy(array_db)
             for key in worker:
-                if key.endswith('.txt'):
+                if key.endswith(('clear', 'used')):
                     save_array_to_file(key, temp_db[key])
+                    description = f"len({key}) = {len(temp_db[key])} / {worker['range'][-1]}"
                     try:
-                        drive_client.update_file(worker[key], key)
+                        drive_client.update_file(worker[key], key, description)
                     except IndexError and Exception:
                         drive_client = Drive('google.json')
-                        drive_client.update_file(worker[key], key)
+                        drive_client.update_file(worker[key], key, description)
 
-            if len(temp_db[f"{worker['prefix']}_used.txt"]) >= len(worker['range']) - 1 and worker['status'] == '🅰️':
+            if len(temp_db[f"{worker['prefix']}_used"]) >= len(worker['range']) - 1 and worker['status'] == '🅰️':
                 update_status_in_google('✅')
                 objects.printer('Цикл проверок доступности юзеров пройден.')
                 _thread.exit()
@@ -201,8 +199,8 @@ def variables_creation():
                     worker['another_api'] = row[3]
                 if worker['api'] == row[3]:
                     worker['another_api'] = row[6]
-            for postfix in ['used', 'clear']:
-                file_name = f"{worker['prefix']}_{postfix}.txt"
+            for postfix in ['clear', 'used']:
+                file_name = f"{worker['prefix']}_{postfix}"
                 worker[file_name] = ''
                 db[file_name] = []
             for file in drive_client.files(name_startswith=worker['prefix']):
@@ -216,7 +214,7 @@ def variables_creation():
             worker['folder'] = file['id']
 
     for key in worker:
-        if key.endswith('.txt') and worker[key] == '':
+        if key.endswith(('clear', 'used')) and worker[key] == '':
             save_array_to_file(key, [])
             response = drive_client.create_file(key, worker['folder'])
             objects.printer(f'{key} создан')
@@ -227,9 +225,9 @@ def variables_creation():
         if worker['another_api']:
             apis.insert(0, worker['another_api'])
         for key in worker:
-            if key.endswith('.txt'):
+            if key.endswith(('clear', 'used')):
                 save_array_to_file(key, [])
-                drive_client.update_file(worker[key], key)
+                drive_client.update_file(worker[key], key, f"len({key}) = 0 / {worker['range'][-1]}")
         update_status_in_google('🅰️')
         for api in apis:
             for app in heroku3.from_key(api).apps():
@@ -237,12 +235,9 @@ def variables_creation():
                 config['workers_count'] = str(worker['workers_count'])
 
     for key in worker:
-        if key.endswith('.txt'):
-            file = open(key, 'r')
-            text = re.sub('CLEAR_FILE_FILLER', '', file.read())
-            if text:
-                db[key] = text.split(' ')
-            file.close()
+        if key.endswith(('clear', 'used')):
+            with open('main', 'rb') as file:
+                db[key] = pickle.load(file)
 
     combs = combinations_generate()
     combs = list(set(combs) - set(db[f"{worker['prefix']}_used.txt"]))
