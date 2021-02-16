@@ -229,6 +229,7 @@ def logs_to_google():
                         else:
                             logs_db['used_count'] += len(array)
                         array.clear()
+                    print(file['name'], len(logs_db['clear']))
                     os.remove(file['name'])
 
                 if logs_db['used_count'] >= master['max_users_count']:
