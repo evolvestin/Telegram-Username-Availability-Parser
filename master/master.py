@@ -226,20 +226,23 @@ def logs_to_google():
                         array = pickle.load(local_file)
                         if 'clear' in file['name']:
                             logs_db['clear'].extend(array)
-                            print(file['name'], len(logs_db['clear']))
                         else:
                             logs_db['used_count'] += len(array)
                         array.clear()
                     os.remove(file['name'])
 
                 if logs_db['used_count'] >= master['max_users_count']:
+                    step = 50
+                    sleep(step)
                     print('начинаем сет')
                     logs_set = set(logs_db['clear'])
                     logs_db.clear()
-                    step = 50
+                    print('сет закончен')
                     with open('main', 'wb') as file:
                         pickle.dump(logs_set, file)
+                    print('запись сета в файл')
                     text = ' '.join(list(logs_set))
+                    print('сделали текст из сета')
                     logs_set.clear()
                     for worker in workers:
                         worker['update'] = 1
