@@ -209,7 +209,8 @@ def logs_to_google():
                         config['workers_count'] = str(workers_count)
             if workers_count == ended_workers_count and google_updated:
                 used_count = 0
-                clear_logs = []
+                with open('logs_raw', 'wb') as file:
+                    pickle.dump([], file)
                 drive_client = Drive('google.json')
                 logs = {'previous': {'id': '', 'createdTime': 0}}
                 objects.printer('Цикл проверок доступности юзеров пройден. '
@@ -224,22 +225,18 @@ def logs_to_google():
                 for file in drive_client.files(parents=master['temp_id']):
                     drive_client.download_file(file['id'], file['name'])
                     with open(file['name'], 'rb') as local_file:
-                        array = pickle.load(local_file)
                         if 'clear' in file['name']:
-                            clear_logs.extend(array)
+                            with open('logs_raw', 'rb') as local_logs:
+                                logs_array = pickle.load(local_logs)
+                            with open('logs_raw', 'wb') as local_logs:
+                                pickle.dump(logs_array.extend(pickle.load(local_file)), local_logs)
+                            logs_array.clear()
                         else:
-                            used_count += len(array)
-                        array.clear()
+                            used_count += len(pickle.load(local_file))
                     os.remove(file['name'])
 
                 if used_count >= master['max_users_count']:
                     step = 50
-                    sleep(300)
-                    print('записываем clear_logs')
-                    with open('logs_raw', 'wb') as file:
-                        pickle.dump(clear_logs, file)
-                    clear_logs.clear()
-                    print('записали в файл, очистили clear_logs')
                     sleep(300)
                     print('начинаем сет')
                     with open('logs_raw', 'rb') as file:
@@ -379,7 +376,6 @@ def logs_to_google():
                         f"Длина полученного массива = {objects.code(used_count)}"
                     objects.printer(re.sub('<.*?>', '', log_text))
                     ErrorAuth.send_dev_message(log_text, tag=None)
-                    clear_logs.clear()
                     sleep(10800)
         except IndexError and Exception:
             ErrorAuth.thread_exec()
