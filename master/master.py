@@ -208,8 +208,9 @@ def logs_to_google():
                         config = app.config()
                         config['workers_count'] = str(workers_count)
             if workers_count == ended_workers_count and google_updated:
+                used_count = 0
+                clear_logs = []
                 drive_client = Drive('google.json')
-                logs_db = {'clear': [], 'used_count': 0}
                 logs = {'previous': {'id': '', 'createdTime': 0}}
                 objects.printer('Цикл проверок доступности юзеров пройден. '
                                 'Записываем список свободных username в google')
@@ -225,18 +226,20 @@ def logs_to_google():
                     with open(file['name'], 'rb') as local_file:
                         array = pickle.load(local_file)
                         if 'clear' in file['name']:
-                            logs_db['clear'].extend(array)
+                            clear_logs.extend(array)
                         else:
-                            logs_db['used_count'] += len(array)
+                            used_count += len(array)
                         array.clear()
                     os.remove(file['name'])
 
-                if logs_db['used_count'] >= master['max_users_count']:
+                if used_count >= master['max_users_count']:
                     step = 50
+                    sleep(300)
+                    print('записываем clear_logs')
                     with open('logs_raw', 'wb') as file:
-                        pickle.dump(logs_db['clear'], file)
-                    logs_db.clear()
-                    print('записали в файл, очистили логс_дб')
+                        pickle.dump(clear_logs, file)
+                    clear_logs.clear()
+                    print('записали в файл, очистили clear_logs')
                     sleep(300)
                     print('начинаем сет')
                     with open('logs_raw', 'rb') as file:
@@ -373,10 +376,10 @@ def logs_to_google():
                 else:
                     log_text = objects.bold('Нарушена целостность массива\n(все workers закончили работу):\n') + \
                         f"Необходимая длина массива проверок = {objects.code(master['max_users_count'])}\n" \
-                        f"Длина полученного массива = {objects.code(logs_db['used_count'])}"
+                        f"Длина полученного массива = {objects.code(used_count)}"
                     objects.printer(re.sub('<.*?>', '', log_text))
                     ErrorAuth.send_dev_message(log_text, tag=None)
-                    logs_db.clear()
+                    clear_logs.clear()
                     sleep(10800)
         except IndexError and Exception:
             ErrorAuth.thread_exec()
