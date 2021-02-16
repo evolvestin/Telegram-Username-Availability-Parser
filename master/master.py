@@ -233,9 +233,10 @@ def logs_to_google():
 
                 if logs_db['used_count'] >= master['max_users_count']:
                     step = 50
-                    sleep(200)
+                    sleep(300)
                     print('начинаем сет')
                     logs_set = set(logs_db['clear'])
+                    print('сет закончен1')
                     logs_db.clear()
                     print('сет закончен')
                     with open('main', 'wb') as file:
