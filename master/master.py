@@ -233,11 +233,15 @@ def logs_to_google():
 
                 if logs_db['used_count'] >= master['max_users_count']:
                     step = 50
+                    with open('logs_raw', 'wb') as file:
+                        pickle.dump(logs_db['clear'], file)
+                    logs_db.clear()
+                    print('записали в файл, очистили логс_дб')
                     sleep(300)
                     print('начинаем сет')
-                    logs_set = set(logs_db['clear'])
-                    print('сет закончен1')
-                    logs_db.clear()
+                    with open('logs_raw', 'rb') as file:
+                        logs_set = set(pickle.load(file))
+                    os.remove('logs_raw')
                     print('сет закончен')
                     with open('main', 'wb') as file:
                         pickle.dump(logs_set, file)
