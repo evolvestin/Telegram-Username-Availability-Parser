@@ -226,13 +226,14 @@ def logs_to_google():
                         array = pickle.load(local_file)
                         if 'clear' in file['name']:
                             logs_db['clear'].extend(array)
+                            print(file['name'], len(logs_db['clear']))
                         else:
                             logs_db['used_count'] += len(array)
                         array.clear()
-                    print(file['name'], len(logs_db['clear']))
                     os.remove(file['name'])
 
                 if logs_db['used_count'] >= master['max_users_count']:
+                    print('начинаем сет')
                     logs_set = set(logs_db['clear'])
                     logs_db.clear()
                     step = 50
