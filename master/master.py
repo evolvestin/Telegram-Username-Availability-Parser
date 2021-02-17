@@ -233,6 +233,7 @@ def logs_to_google():
                             with open('logs_raw', 'wb') as local_logs_write:
                                 pickle.dump(glow, local_logs_write)
                             array.clear()
+                            glow.clear()
                         else:
                             used_count += len(pickle.load(local_file))
                     os.remove(file['name'])
