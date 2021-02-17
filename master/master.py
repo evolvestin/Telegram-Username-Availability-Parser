@@ -69,6 +69,7 @@ def start(stamp):
         with open(file['name'], 'rb') as local_file:
             if 'clear' in file['name']:
                 array.extend(pickle.load(local_file))
+                print(file['name'], len(array))
         os.remove(file['name'])
     print(len(array))
     with open('logs', 'wb') as file:
