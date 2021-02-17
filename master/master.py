@@ -228,8 +228,8 @@ def logs_to_google():
                         if 'clear' in file['name']:
                             with open('logs_raw', 'rb') as local_logs:
                                 glow = pickle.load(local_logs)
-                                with open('logs_raw', 'wb') as local_logs_write:
-                                    pickle.dump(glow.extend(pickle.load(local_file)), local_logs_write)
+                            with open('logs_raw', 'wb') as local_logs_write:
+                                pickle.dump(glow.extend(pickle.load(local_file)), local_logs_write)
                         else:
                             used_count += len(pickle.load(local_file))
                     os.remove(file['name'])
