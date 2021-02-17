@@ -226,13 +226,10 @@ def logs_to_google():
                     drive_client.download_file(file['id'], file['name'])
                     with open(file['name'], 'rb') as local_file:
                         if 'clear' in file['name']:
-                            array = pickle.load(local_file)
                             with open('logs_raw', 'rb') as local_logs:
                                 glow = pickle.load(local_logs)
-                            glow.extend(array)
                             with open('logs_raw', 'wb') as local_logs_write:
-                                pickle.dump(glow, local_logs_write)
-                            array.clear()
+                                pickle.dump(glow.extend(pickle.load(local_file)), local_logs_write)
                             glow.clear()
                         else:
                             used_count += len(pickle.load(local_file))
