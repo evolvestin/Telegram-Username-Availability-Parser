@@ -3,6 +3,7 @@ import os
 import re
 import pickle
 import objects
+import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -72,6 +73,18 @@ def start(stamp):
                 print(file['name'], len(array))
         os.remove(file['name'])
     print('all', len(array))
-    with open('logs', 'wb') as file:
-        pickle.dump(array, file)
+    array.clear()
+    with open('db1', 'wb') as file:
+        client = gspread.service_account('google.json')
+        google_values = client.open_by_key('1d0OS28iDsUEkQm1Rh_bCRrgpAlQWZQWG2q-VWHjSCXA').sheet1.col_values(1)
+        perv_set = set(''.join(google_values).split(' '))
+        print(len(perv_set))
+        pickle.dump(perv_set, file)
+        google_values.clear()
+
+    with open('db2', 'wb') as file:
+        client = gspread.service_account('google.json')
+        google_values = client.open_by_key('1d0OS28iDsUEkQm1Rh_bCRrgpAlQWZQWG2q-VWHjSCXA').sheet1.col_values(1)
+        pickle.dump(set(''.join(google_values).split(' ')), file)
+        google_values.clear()
     print('конец, файл записан')
