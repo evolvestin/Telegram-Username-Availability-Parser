@@ -71,9 +71,7 @@ def start(stamp):
                 array.extend(pickle.load(local_file))
                 print(file['name'], len(array))
         os.remove(file['name'])
-    print('не сетнутый', len(array))
-    array = set(array)
-    print('сетнутый', len(array))
+    print('all', len(array))
     with open('logs', 'wb') as file:
         pickle.dump(array, file)
     print('конец, файл записан')
